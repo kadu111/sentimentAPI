@@ -1,4 +1,4 @@
-package com.hackaton_one.sentiment_api.api;
+package com.hackaton_one.sentiment_api.api.exceptions;
 
 import com.hackaton_one.sentiment_api.api.dto.ApiErrorResponse;
 import com.hackaton_one.sentiment_api.exceptions.ModelAnalysisException;

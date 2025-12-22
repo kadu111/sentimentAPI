@@ -1,6 +1,6 @@
-package com.hackaton_one.sentiment_api.api;
+package com.hackaton_one.sentiment_api.api.controller;
 
-import com.hackaton_one.sentiment_api.model.Sentiment;
+import com.hackaton_one.sentiment_api.api.dto.SentimentResponseDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,14 +35,14 @@ public class SentimentController {
      * Recebe uma requisição contendo dados de texto para análise de sentimento.
      * Utiliza a entidade Sentiment com validações Bean Validation.
      * 
-     * @param sentiment Entidade Sentiment validada com @Valid
+     * @param request Entidade Sentiment validada com @Valid
      * @param bindingResult Resultado da validação Bean Validation
      * @return ResponseEntity com HTTP 200 OK e dados do Sentiment em caso de sucesso,
      *         ou HTTP 400 Bad Request com mensagem de erro em caso de falha
      */
     @PostMapping
     public ResponseEntity<?> analyzeSentiment(
-            @Valid @RequestBody Sentiment sentiment,
+            @Valid @RequestBody SentimentResponseDTO request,
             BindingResult bindingResult) {
         
         try {
@@ -62,15 +62,17 @@ public class SentimentController {
                 
                 Map<String, String> errorResponse = new HashMap<>();
                 errorResponse.put("mensagem", errorMessage);
-                
+
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
             }
             
             // Validação passou - retorna sucesso
             // Stub/mock simples: apenas retorna o objeto recebido
             // (lógica complexa de negócio deve estar em service, não no controller)
-            
-            return ResponseEntity.ok(sentiment);
+
+            return ResponseEntity.ok(
+                    new SentimentResponseDTO("POSITIVE", 0.87, request.text())
+            );
             
         } catch (Exception e) {
             // Captura qualquer outra exceção
