@@ -33,6 +33,8 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now()
         );
 
+        log.error("Model initialization error: {}", e.getMessage(), e);
+
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(response);
@@ -52,6 +54,8 @@ public class GlobalExceptionHandler {
                 e.getMessage(),
                 LocalDateTime.now()
         );
+
+        log.warn("Model analysis error: {}", e.getMessage(), e);
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
@@ -74,6 +78,8 @@ public class GlobalExceptionHandler {
                     error.getDefaultMessage() :
                     "Field '" + error.getField() + "' is invalid")
                 .orElse("Invalid input data");
+
+        log.info("Validation error: {}", message);
 
         ApiErrorResponse response = new ApiErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
@@ -100,6 +106,8 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now()
         );
 
+        log.info("Illegal argument: {}", e.getMessage(), e);
+
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(response);
@@ -119,6 +127,8 @@ public class GlobalExceptionHandler {
                 e.getMessage(),
                 LocalDateTime.now()
         );
+
+        log.warn("CSV processing error: {}", e.getMessage(), e);
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)

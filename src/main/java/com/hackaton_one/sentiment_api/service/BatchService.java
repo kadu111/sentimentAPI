@@ -4,6 +4,7 @@ import com.hackaton_one.sentiment_api.api.dto.BatchSentimentResponseDTO;
 import com.hackaton_one.sentiment_api.api.dto.SentimentResponseDTO;
 import com.hackaton_one.sentiment_api.api.dto.SentimentResultDTO;
 import com.hackaton_one.sentiment_api.exceptions.CsvProcessingException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,6 +18,7 @@ import java.util.List;
 /**
  * Serviço para processamento em lote de análise de sentimento via CSV.
  */
+@Slf4j
 @Service
 public class BatchService {
     @Value("${batch.max-lines:100}")
@@ -60,6 +62,7 @@ public class BatchService {
                     if (textColumn != null && !textColumn.isEmpty()) {
                         textColumnIndex = findColumnIndex(columns, textColumn);
                         if (textColumnIndex == -1) {
+                            log.error("Column '{}' not found in CSV header.", textColumn);
                             throw new IllegalArgumentException(
                                 "Column '" + textColumn + "' not found. Available: " + String.join(", ", columns));
                         }
@@ -88,6 +91,7 @@ public class BatchService {
                 lineCount++;
             }
         } catch (Exception e) {
+            log.error("Error processing CSV file: {}", e.getMessage(), e);
             throw new CsvProcessingException("Error processing CSV file: " + e.getMessage(), e);
         }
         

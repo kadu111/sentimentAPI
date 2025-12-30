@@ -7,6 +7,7 @@ import com.hackaton_one.sentiment_api.exceptions.ModelAnalysisException;
 import com.hackaton_one.sentiment_api.exceptions.ModelInitializationException;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ import java.util.Map;
  * Responsável por carregar o modelo ONNX, preparar os dados de entrada,
  * executar a inferência e retornar os resultados.
  */
+@Slf4j
 @Service
 public class SentimentService {
     private OrtEnvironment env;
@@ -35,8 +37,8 @@ public class SentimentService {
         try {
             ClassPathResource resource = new ClassPathResource(MODEL_PATH);
             if (!resource.exists()) {
-                System.out.println("⚠️  Modelo ONNX não encontrado em: " + MODEL_PATH);
-                System.out.println("⚠️  Usando análise simples baseada em palavras-chave para testes.");
+                log.debug("Modelo ONNX não encontrado em: " + MODEL_PATH);
+                log.debug("Usando análise simples baseada em palavras-chave para testes.");
                 this.modelAvailable = false;
                 return;
             }
@@ -53,10 +55,9 @@ public class SentimentService {
             // 3. Load the model
             this.session = env.createSession(modelBytes, opts);
             this.modelAvailable = true;
-            System.out.println("✅ Modelo ONNX carregado com sucesso!");
+            log.debug("Modelo ONNX carregado com sucesso de: " + MODEL_PATH);
         } catch (Exception e) {
-            System.out.println("⚠️  Erro ao carregar modelo ONNX: " + e.getMessage());
-            System.out.println("⚠️  Usando análise simples baseada em palavras-chave para testes.");
+            log.error("Erro ao carregar modelo ONNX: {}", e.getMessage(), e);
             this.modelAvailable = false;
             this.env = null;
             this.session = null;
@@ -97,9 +98,11 @@ public class SentimentService {
 
                 return new SentimentResultDTO(previsao, probabilidade);
             } catch (Exception e){
+                log.error("Failed to run inference: {}", e.getMessage(), e);
                 throw new ModelAnalysisException("Failed to run inference: " + e.getMessage(), e);
             }
         } catch (Exception e){
+            log.error("Failed to prepare tensor for inference: {}", e.getMessage(), e);
             throw new ModelAnalysisException("Failed to prepare tensor for inference: " + e.getMessage(), e);
         }
     }
@@ -151,7 +154,7 @@ public class SentimentService {
             if (session != null) session.close();
             if (env != null) env.close();
         } catch (Exception e){
-            e.printStackTrace();
+            log.error("Error during ONNX Runtime cleanup: {}", e.getMessage(), e);
         }
     }
 }
