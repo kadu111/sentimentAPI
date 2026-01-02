@@ -1,0 +1,53 @@
+version: '3.9'
+
+services:
+  sentiment-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sentiment-api
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=jdbc:postgresql://sentiment-db:5432/sentiment_db
+      - DATABASE_USERNAME=sentiment_user
+      - DATABASE_PASSWORD=sentiment_password
+      - JPA_HIBERNATE_DDL_AUTO=update
+      - SERVER_PORT=8080
+      - LOGGING_LEVEL_ROOT=INFO
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sentiment-network
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: sentiment-db
+    environment:
+      - POSTGRES_DB=sentiment_db
+      - POSTGRES_USER=sentiment_user
+      - POSTGRES_PASSWORD=sentiment_password
+      - POSTGRES_INITDB_ARGS=-c max_connections=100
+    ports:
+      - "5432:5432"
+    volumes:
+      - sentiment-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentiment_user -d sentiment_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sentiment-network
+    restart: unless-stopped
+
+networks:
+  sentiment-network:
+    driver: bridge
+
+volumes:
+  sentiment-db-data:
+    driver: local
+

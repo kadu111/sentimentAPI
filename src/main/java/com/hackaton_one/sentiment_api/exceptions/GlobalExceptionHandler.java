@@ -1,8 +1,7 @@
-package com.hackaton_one.sentiment_api.api;
+package com.hackaton_one.sentiment_api.exceptions;
 
 import com.hackaton_one.sentiment_api.api.dto.ApiErrorResponse;
-import com.hackaton_one.sentiment_api.exceptions.ModelAnalysisException;
-import com.hackaton_one.sentiment_api.exceptions.ModelInitializationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -15,6 +14,7 @@ import java.time.LocalDateTime;
  * Handler global para exceções da API.
  * Centraliza o tratamento de erros e padroniza as respostas HTTP.
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -32,6 +32,8 @@ public class GlobalExceptionHandler {
                 e.getMessage(),
                 LocalDateTime.now()
         );
+
+        log.error("Model initialization error: {}", e.getMessage(), e);
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -53,6 +55,8 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now()
         );
 
+        log.warn("Model analysis error: {}", e.getMessage(), e);
+
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(response);
@@ -69,13 +73,17 @@ public class GlobalExceptionHandler {
         String message = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .findFirst()
-                .orElse("Erro de validação");
+                .map(error -> error.getDefaultMessage() != null ?
+                    error.getDefaultMessage() :
+                    "Field '" + error.getField() + "' is invalid")
+                .orElse("Invalid input data");
+
+        log.info("Validation error: {}", message);
 
         ApiErrorResponse response = new ApiErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
-                "Bad Request",
+                "Validation Error",
                 message,
                 LocalDateTime.now()
         );
@@ -84,16 +92,63 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Trata exceções de argumentos inválidos.
+     * Retorna HTTP 400 para erros de validação de entrada.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiErrorResponse> handleIllegalArgumentException(
+            IllegalArgumentException e) {
+
+        ApiErrorResponse response = new ApiErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+
+        log.info("Illegal argument: {}", e.getMessage(), e);
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(response);
+    }
+
+    /**
+     * Trata exceções de processamento de CSV.
+     * Retorna HTTP 400 para erros ao processar arquivo CSV.
+     */
+    @ExceptionHandler(CsvProcessingException.class)
+    public ResponseEntity<ApiErrorResponse> handleCsvProcessingException(
+            CsvProcessingException e) {
+
+        ApiErrorResponse response = new ApiErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "CSV Processing Error",
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+
+        log.warn("CSV processing error: {}", e.getMessage(), e);
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(response);
+    }
+
+    /**
      * Trata exceções genéricas não capturadas.
      * Retorna HTTP 500 para qualquer erro inesperado.
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGenericException(Exception e) {
+        log.error("Unexpected error occurred: {}", e.getMessage(), e);
 
+        String errorMessage = e.getMessage() != null ? e.getMessage() : "An unexpected error occurred";
+        
         ApiErrorResponse response = new ApiErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal Server Error",
-                "An unexpected error occurred",
+                errorMessage,
                 LocalDateTime.now()
         );
 
